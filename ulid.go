@@ -44,7 +44,7 @@ An ULID is a 16 byte Universally Unique Lexicographically Sortable Identifier
 	|                       32_bit_uint_random                      |
 	+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 */
-type ULID [16]byte
+type ULID [38]byte
 
 var (
 	// ErrDataSize is returned when parsing or unmarshaling ULIDs with the wrong
@@ -327,6 +327,7 @@ func (id ULID) MarshalTextTo(dst []byte) error {
 	dst[23] = Encoding[(id[14]&124)>>2]
 	dst[24] = Encoding[((id[14]&3)<<3)|((id[15]&224)>>5)]
 	dst[25] = Encoding[id[15]&31]
+	// FIXME
 
 	return nil
 }
@@ -363,7 +364,7 @@ var dec = [...]byte{
 }
 
 // EncodedSize is the length of a text encoded ULID.
-const EncodedSize = 26
+const EncodedSize = 42// orig 26
 
 // UnmarshalText implements the encoding.TextUnmarshaler interface by
 // parsing the data as string encoded ULID.
@@ -543,7 +544,7 @@ type MonotonicEntropy struct {
 	io.Reader
 	ms      uint64
 	inc     uint64
-	entropy uint80
+	entropy uint256
 	rand    [8]byte
 	rng     *rand.Rand
 }
@@ -624,22 +625,37 @@ func (m *MonotonicEntropy) random() (inc uint64, err error) {
 	return 1 + inc, nil
 }
 
-type uint80 struct {
-	Hi uint16
+type uint256 struct {
+	Hi uint64
 	Lo uint64
+    Lo1 uint64
+	Lo2 uint64
+		//Lo3 uint64
 }
 
-func (u *uint80) SetBytes(bs []byte) {
-	u.Hi = binary.BigEndian.Uint16(bs[:2])
-	u.Lo = binary.BigEndian.Uint64(bs[2:])
+//type uint256 struct {
+//	Lo0 uint64
+//	Lo1 uint64
+//	Lo2 uint64
+//	Lo3 uint64
+//}
+
+func (u *uint256) SetBytes(bs []byte) {
+	u.Hi = binary.BigEndian.Uint64(bs[0:8])
+	u.Lo = binary.BigEndian.Uint64(bs[8:16])
+	u.Lo1 = binary.BigEndian.Uint64(bs[16:24])
+	u.Lo2 = binary.BigEndian.Uint64(bs[24:32])
 }
 
-func (u *uint80) AppendTo(bs []byte) {
-	binary.BigEndian.PutUint16(bs[:2], u.Hi)
-	binary.BigEndian.PutUint64(bs[2:], u.Lo)
+func (u *uint256) AppendTo(bs []byte) {
+	binary.BigEndian.PutUint64(bs[:8], u.Hi)
+	binary.BigEndian.PutUint64(bs[8:16], u.Lo)
+	binary.BigEndian.PutUint64(bs[16:24], u.Lo1)
+	binary.BigEndian.PutUint64(bs[24:32], u.Lo2)
 }
 
-func (u *uint80) Add(n uint64) (overflow bool) {
+func (u *uint256) Add(n uint64) (overflow bool) {
+	//lo2, lo1, lo, hi := u.Lo2, u.Lo1, u.Lo, u.Hi
 	lo, hi := u.Lo, u.Hi
 	if u.Lo += n; u.Lo < lo {
 		u.Hi++
@@ -647,6 +663,6 @@ func (u *uint80) Add(n uint64) (overflow bool) {
 	return u.Hi < hi
 }
 
-func (u uint80) IsZero() bool {
-	return u.Hi == 0 && u.Lo == 0
+func (u uint256) IsZero() bool {
+	return u.Hi == 0 && u.Lo == 0 && u.Lo1 == 0 && u.Lo2 == 0
 }
