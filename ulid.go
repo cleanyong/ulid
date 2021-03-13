@@ -586,7 +586,7 @@ type MonotonicEntropy struct {
 	io.Reader
 	ms      uint64
 	inc     uint64
-	entropy uint256
+	entropy uint280
 	rand    [8]byte
 	rng     *rand.Rand
 }
@@ -667,44 +667,57 @@ func (m *MonotonicEntropy) random() (inc uint64, err error) {
 	return 1 + inc, nil
 }
 
-type uint256 struct {
-	Hi uint64
-	Lo uint64
+type uint280 struct {
+	Hi  uint8
+	Hi1 uint16
+	Lo  uint64
     Lo1 uint64
 	Lo2 uint64
-		//Lo3 uint64
+	Lo3 uint64
 }
 
-//type uint256 struct {
-//	Lo0 uint64
-//	Lo1 uint64
-//	Lo2 uint64
-//	Lo3 uint64
-//}
-
-func (u *uint256) SetBytes(bs []byte) {
-	u.Hi = binary.BigEndian.Uint64(bs[0:8])
-	u.Lo = binary.BigEndian.Uint64(bs[8:16])
-	u.Lo1 = binary.BigEndian.Uint64(bs[16:24])
-	u.Lo2 = binary.BigEndian.Uint64(bs[24:32])
+func (u *uint280) SetBytes(bs []byte) {
+	u.Hi = uint8(bs[0])
+	u.Hi1 = binary.BigEndian.Uint16(bs[1:3])
+	u.Lo = binary.BigEndian.Uint64(bs[3:11])
+	u.Lo1 = binary.BigEndian.Uint64(bs[11:19])
+	u.Lo2 = binary.BigEndian.Uint64(bs[19:27])
+	u.Lo3 = binary.BigEndian.Uint64(bs[27:35])
 }
 
-func (u *uint256) AppendTo(bs []byte) {
-	binary.BigEndian.PutUint64(bs[0:8], u.Hi)
-	binary.BigEndian.PutUint64(bs[8:16], u.Lo)
-	binary.BigEndian.PutUint64(bs[16:24], u.Lo1)
-	binary.BigEndian.PutUint64(bs[24:32], u.Lo2)
+func (u *uint280) AppendTo(bs []byte) {
+    u.Hi = bs[0]
+	binary.BigEndian.PutUint16(bs[1:3], u.Hi1)
+	binary.BigEndian.PutUint64(bs[3:11], u.Lo)
+	binary.BigEndian.PutUint64(bs[11:19], u.Lo1)
+	binary.BigEndian.PutUint64(bs[19:27], u.Lo2)
+	binary.BigEndian.PutUint64(bs[27:35], u.Lo3)
 }
 
-func (u *uint256) Add(n uint64) (overflow bool) {
-	//lo2, lo1, lo, hi := u.Lo2, u.Lo1, u.Lo, u.Hi
-	lo, hi := u.Lo, u.Hi
+func (u *uint280) Add(n uint64) (overflow bool) {
+	lo3, lo2, lo1, lo, hi1, hi := u.Lo3, u.Lo2, u.Lo1, u.Lo, u.Hi1, u.Hi
+	//lo, hi := u.Lo, u.Hi
+	//if u.Lo += n; u.Lo < lo {
+	//	u.Hi++
+	//}
+	if u.Lo3 += n; u.Lo3 < lo3 {
+		u.Lo2++
+	}
+	if u.Lo2 += n; u.Lo2 < lo2 {
+		u.Lo1++
+	}
+	if u.Lo1 += n; u.Lo1 < lo1 {
+		u.Lo++
+	}
 	if u.Lo += n; u.Lo < lo {
+		u.Hi1++
+	}
+	if u.Hi1 += uint16(n); u.Hi1 < hi1 {
 		u.Hi++
 	}
 	return u.Hi < hi
 }
 
-func (u uint256) IsZero() bool {
-	return u.Hi == 0 && u.Lo == 0 && u.Lo1 == 0 && u.Lo2 == 0
+func (u uint280) IsZero() bool {
+	return u.Hi == 0 && u.Hi1 == 0 && u.Lo == 0 && u.Lo1 == 0 && u.Lo2 == 0 && u.Lo3 == 0
 }
