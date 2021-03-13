@@ -44,7 +44,7 @@ An ULID is a 16 byte Universally Unique Lexicographically Sortable Identifier
 	|                       32_bit_uint_random                      |
 	+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 */
-type ULID [38]byte
+type ULID [41]byte
 
 var (
 	// ErrDataSize is returned when parsing or unmarshaling ULIDs with the wrong
@@ -328,6 +328,48 @@ func (id ULID) MarshalTextTo(dst []byte) error {
 	dst[24] = Encoding[((id[14]&3)<<3)|((id[15]&224)>>5)]
 	dst[25] = Encoding[id[15]&31]
 	// FIXME
+	dst[26] = Encoding[(id[16]&248)>>3]
+	dst[27] = Encoding[((id[16]&7)<<2)|((id[17]&192)>>6)]
+	dst[28] = Encoding[(id[17]&62)>>1]
+	dst[29] = Encoding[((id[17]&1)<<4)|((id[18]&240)>>4)]
+	dst[30] = Encoding[((id[18]&15)<<1)|((id[19]&128)>>7)]
+	dst[31] = Encoding[(id[19]&124)>>2]
+	dst[32] = Encoding[((id[19]&3)<<3)|((id[20]&224)>>5)]
+	dst[33] = Encoding[id[20]&31]
+	dst[34] = Encoding[(id[21]&248)>>3]
+	dst[35] = Encoding[((id[21]&7)<<2)|((id[22]&192)>>6)]
+	dst[36] = Encoding[(id[22]&62)>>1]
+	dst[37] = Encoding[((id[22]&1)<<4)|((id[23]&240)>>4)]
+	dst[38] = Encoding[((id[23]&15)<<1)|((id[24]&128)>>7)]
+	dst[39] = Encoding[(id[24]&124)>>2]
+	dst[40] = Encoding[((id[24]&3)<<3)|((id[25]&224)>>5)]
+	dst[41] = Encoding[id[25]&31]
+
+	dst[42] = Encoding[(id[26]&248)>>3]
+	dst[43] = Encoding[((id[26]&7)<<2)|((id[27]&192)>>6)]
+	dst[44] = Encoding[(id[27]&62)>>1]
+	dst[45] = Encoding[((id[27]&1)<<4)|((id[28]&240)>>4)]
+	dst[46] = Encoding[((id[28]&15)<<1)|((id[29]&128)>>7)]
+	dst[47] = Encoding[(id[29]&124)>>2]
+	dst[48] = Encoding[((id[29]&3)<<3)|((id[30]&224)>>5)]
+	dst[49] = Encoding[id[30]&31]
+	dst[50] = Encoding[(id[31]&248)>>3]
+	dst[51] = Encoding[((id[31]&7)<<2)|((id[32]&192)>>6)]
+	dst[52] = Encoding[(id[32]&62)>>1]
+	dst[53] = Encoding[((id[32]&1)<<4)|((id[33]&240)>>4)]
+	dst[54] = Encoding[((id[33]&15)<<1)|((id[34]&128)>>7)]
+	dst[55] = Encoding[(id[34]&124)>>2]
+	dst[56] = Encoding[((id[34]&3)<<3)|((id[35]&224)>>5)]
+	dst[57] = Encoding[id[35]&31]
+
+	dst[58] = Encoding[(id[36]&248)>>3]
+	dst[59] = Encoding[((id[36]&7)<<2)|((id[37]&192)>>6)]
+	dst[60] = Encoding[(id[37]&62)>>1]
+	dst[61] = Encoding[((id[37]&1)<<4)|((id[38]&240)>>4)]
+	dst[62] = Encoding[((id[38]&15)<<1)|((id[39]&128)>>7)]
+	dst[63] = Encoding[(id[39]&124)>>2]
+	dst[64] = Encoding[((id[39]&3)<<3)|((id[40]&224)>>5)]
+	dst[65] = Encoding[id[40]&31]
 
 	return nil
 }
@@ -364,7 +406,7 @@ var dec = [...]byte{
 }
 
 // EncodedSize is the length of a text encoded ULID.
-const EncodedSize = 42// orig 26
+const EncodedSize = 66// orig 26. 10 Char for timestamp, 56 char for randomness
 
 // UnmarshalText implements the encoding.TextUnmarshaler interface by
 // parsing the data as string encoded ULID.
@@ -648,7 +690,7 @@ func (u *uint256) SetBytes(bs []byte) {
 }
 
 func (u *uint256) AppendTo(bs []byte) {
-	binary.BigEndian.PutUint64(bs[:8], u.Hi)
+	binary.BigEndian.PutUint64(bs[0:8], u.Hi)
 	binary.BigEndian.PutUint64(bs[8:16], u.Lo)
 	binary.BigEndian.PutUint64(bs[16:24], u.Lo1)
 	binary.BigEndian.PutUint64(bs[24:32], u.Lo2)
